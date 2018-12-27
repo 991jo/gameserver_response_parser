@@ -42,7 +42,11 @@ def parse_srcds(data, addr):
             server_dict[key] = bytes_to_int(data[pos:pos+1])
             pos+=1
 
-        # TODO add special handling for The Ship packet format
+        # special handling for The Ship packet format
+        if server_dict["id"] == 2400: # The Ship AppID
+            for key in ["mode", "witnesses", "duration"]:
+                server_dict[key] = bytes_to_int(data[pos:pos+1])
+                pos+=1
 
         # Version
         str_end = data.find(b"\x00", pos)
