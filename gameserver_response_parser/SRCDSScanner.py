@@ -89,55 +89,47 @@ def parse_srcds(data, addr):
 
     # old goldsource format
     if header == 0x6D:
-        server_dict["protocol_subversion"] = "goldsource"
-        payload = data[1:]
-        address_end = payload.find(b"\x00")
-        name_end                    = payload.find(b"\x00", address_end+1)
-        mapname_end                 = payload.find(b"\x00",name_end+1)
-        folder_end                  = payload.find(b"\x00",mapname_end+1)
-        game_end                    = payload.find(b"\x00",folder_end+1)
-        server_dict["server_name"]  = payload[0:name_end].decode('utf-8', 'ignore')  # Name
-        server_dict["map"]          = payload[name_end+1:mapname_end].decode('utf-8', 'ignore') # Map
-        server_dict["game"]         = payload[mapname_end + 1: folder_end].decode('utf-8', 'ignore') # Folder
-        server_dict["game_type"]     = payload[folder_end + 1: game_end].decode('utf-8', 'ignore') # Game
-        server_dict["players"]      = int.from_bytes(payload[game_end+1:game_end+2],byteorder='little') # Players
-        server_dict["max_players"]  = int.from_bytes(payload[game_end+2:game_end+3], byteorder='little') # Max. Players
-        server_dict["protocol"]    = int.from_bytes(payload[game_end+3:game_end+4],byteorder='little') # Bots
-        server_type = payload[game_end+4:game_end+5].decode("utf-8", "ignore") # Server Type
-        server_dict["server_type"]  = "dedicated"
-        if server_type == "L":
-            server_dict["server_type"]  = "non-dedicated"
-        elif server_type == "P":
-            server_dict["server_type"]  = "proxy" # SourceTV relay
-        environment               = payload[game_end+5:game_end+6] # Environment
-        server_dict["environment"] = "Windows" if environment == "W" else "Linux"
-        password_protected = int.from_bytes(payload[game_end+6:game_end+7],byteorder='little') # Visibility
-        server_dict["password_protected"] = password_protected != 0
-        mod = int.from_bytes(payload[game_end+7:game_end+8],byteorder='little') # is this server modded
-        server_dict["mod"] = (mod != 0)
-        mod_end = game_end + 8
-        #special options if mod is true
-        if mod != 0:
-            # now 2 strings, 1 byte, 2 longs, 2 bytes
-            mod_start = game_end+8
-            modwebsite_end = payload.find(b"\x00", mod_start)
-            moddownload_end = payload.find(b"\x00", modwebsite_end)
-            server["mod_website"] = payload[mod_start:modwebsite_end]
-            server["mod_download"] = payload[modwebsite_end:moddownload_end]
-            server_dict["mod_version"]= int.from_bytes(
-                    payload[moddownload_end+1:moddownload_end+5],byteorder='little') #mod version
-            server_dict["mod_size"]= int.from_bytes(
-                    payload[moddownload_end+5:moddownload_end+9],byteorder='little') #mod download size
-            server_dict["mod_type"]= int.from_bytes(
-                    payload[moddownload_end+9:moddownload_end+10],byteorder='little') #mod type (multiplayer or singleplayer)
-            server_dict["mod_dll"]= int.from_bytes(
-                    payload[moddownload_end+9:moddownload_end+10],byteorder='little') #mod dll (does the mod use a dll)
-            mod_end = moddownload_end+10
-        # VAC is skipped
-        server_dict["bot_count"] = int.from_bytes(payload[mod_end:mod_end+1], byteorder='little')
+        server_dict["_parser_subversion"] = "goldsource"
+        pos = 5
+        for key in ["address", "name", "map", "folder", "game"]:
+            str_end = data.find(b"\x00", pos)
+            server_dict[key] = bytes_to_str(data[pos:str_end])
+            pos = str_end+1
+        # 3 Bytes as numbers
+        for key in ["players", "max. players", "protocol"]:
+            server_dict[key] = bytes_to_int(data[pos:pos+1])
+            pos+=1
+        # 2 Bytes as chars
+        for key in ["server type","environment"]:
+            server_dict[key] = bytes_to_str(data[pos:pos+1])
+            pos+=1
+        # 2 Bytes as numbers
+        for key in ["visibility", "mod"]:
+            server_dict[key] = bytes_to_int(data[pos:pos+1])
+            pos+=1
+
+        # Check for special mod fields
+        if server_dict["mod"] == 1:
+            # 2 Strings
+            for key in ["link", "download link"]:
+                str_end = data.find(b"\x00", pos)
+                server_dict[key] = bytes_to_str(data[pos:str_end])
+                pos = str_end+1
+            # skip NULL byte
+            pos+=1
+            # 2 longs
+            for key in ["version", "size"]:
+                server_dict[key] = bytes_to_int(data[pos:pos+4])
+                pos+=4
+            # 2 bytes as numbers
+            for key in ["type", "dll"]:
+                server_dict[key] = bytes_to_int(data[pos:pos+1])
+                pos+=1
+        # 2 Bytes as numbers
+        for key in ["vac","bots"]:
+            server_dict[key] = bytes_to_int(data[pos:pos+1])
+            pos+=1
 
         return server_dict
 
-
     return
-
