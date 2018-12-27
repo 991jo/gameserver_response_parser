@@ -15,3 +15,7 @@
 # 0.1.3
 
 - added support for The Ship in the srcds protocol
+
+# 0.2
+
+- added support for goldsource protocol
