@@ -12,5 +12,5 @@ setup(name="gameserver_response_parser",
         author="992jo",
         license="WTF",
         packages=["gameserver_response_parser"],
-        test_suite="gameserver_response_parser.test.srcds_new_format",
+        test_suite="gameserver_response_parser.test",
         include_package_data=True)
