@@ -19,3 +19,11 @@
 # 0.2
 
 - added support for goldsource protocol
+
+# 0.3
+
+- added support for quake3 protocol
+- added tests for quake3 protocol
+- added support for gamespy protocol
+- added support for gamespy2 protocol
+- renamed some files
